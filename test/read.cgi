@@ -37,6 +37,8 @@ print <<"HTML_HEAD";
 <title>$thread_id</title>
 </head>
 <body>
+<strong><a href="http://shinte.tech">Anyちゃんねる</a></strong>
+<hr>
 HTML_HEAD
 
 my $num = 1;
