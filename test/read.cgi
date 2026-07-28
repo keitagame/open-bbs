@@ -22,11 +22,19 @@ unless (-f $dat_path) {
 }
 
 
+
 open my $fh, '<', $dat_path
     or die "Cannot open dat: $!";
 
 my @lines = <$fh>;
 close $fh;
+
+
+my $thread_title = '無題';
+if (@lines) {
+    my @first = split(/<>/, $lines[0]);
+    $thread_title = $first[4] if defined $first[4] && $first[4] ne '';
+}
 
 print <<"HTML_HEAD";
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -37,8 +45,11 @@ print <<"HTML_HEAD";
 <title>$thread_id</title>
 </head>
 <body>
-<strong><a href="http://shinte.tech">Anyちゃんねる</a></strong>
+<br>
+<a href="http://keitagames.com"><strong>トップへ</strong></a>&ensp;<a href="http://keitagames.com/$bbs_id/"><strong>■掲示板に戻る</strong></a>
 <hr>
+<font size="5" color="red">$thread_title</font>
+<br><br>
 HTML_HEAD
 
 my $num = 1;
