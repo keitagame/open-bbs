@@ -39,7 +39,7 @@ print <<"HTML_HEAD";
 <body>
 HTML_HEAD
 
-
+my $num = 1;
 
 foreach my $line (@lines) {
     chomp $line;
@@ -52,16 +52,33 @@ foreach my $line (@lines) {
     my $body    = $fields[3] // '';
     my $other   = $fields[4] // '';
 
-    # 改行を <br> に変換（最小構成）
+   
     $body =~ s/\r?\n/<br>&emsp;&emsp;&ensp;/g;
     $body =~ s/\r?<br>/<br>&emsp;&emsp;&ensp;/g;
 
-    print "<div style='margin-bottom:1em;'>\n";
-    print "<b style='color:green;'>$name</b>\n";
+    print "<div style='margin-bottom:1em;'>$num：\n";
+    print "<b style='color:green;'>$name</b>：\n";
     print "<span>$date</span><br>\n";
     print "&emsp;&emsp;&ensp;$body<br>\n";
     print "</div>\n";
+    $num++;
 }
-
+print << "HTML_BT";
+<br>
+<br>
+<form action="/test/bbs.cgi" method="post">
+<input name="bbs" type="hidden" value="$bbs_id">
+<input name="key" type="hidden" value="$thread_id">
+<button type="submit">書き込む</button>
+<label for="username">名前：</label>
+<input type="text" id="username" width="100" name="FROM" placeholder="名無し"> 
+<label for="useremail">メアド：</label>
+<input type="text" id="useremail" name="mail"> 
+<br>
+<br>
+<textarea id="usermessage" name="MESSAGE" rows="5" cols="65" required></textarea>
+</form>
+<a href="."><strong>リロード</strong></a>&ensp;<a href="/"><strong>板のトップ</strong></a>
+HTML_BT
 print "</body></html>\n";
 exit;
