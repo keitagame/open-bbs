@@ -1,4 +1,3 @@
-
 #!/usr/bin/perl
 use strict;
 use warnings;
@@ -133,8 +132,6 @@ open my $sfh2, ">", $subject;
 open my $sfh2, ">", $subject or die "Cannot write subject.txt: $!";
 
 foreach my $line (@newsubjects) {
-
-    # 改行コードを強制的に LF に統一
     $line =~ s/\r\n/\n/g;
     $line =~ s/\r/\n/g;
 
@@ -150,3 +147,48 @@ close $sfh2;
 
 print "Status: 302 Found\n";
 print "Location: read.cgi/$bbs/$key/\n\n";
+# 3. ブラウザへのレスポンス用ヘッダーを出力（500エラー回避に必須）
+print "Content-Type: text/html; charset=Shift_JIS\n\n";
+
+
+my $filename = "$dir/index.html";
+
+my $html_content = <<"EOF";
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+ "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta charset="Shift_JIS">
+<title>$bbs</title>
+<style type="text/css">
+         body {
+            background-image: url("ba.gif");
+            background-repeat: repeat;
+            background-position: left top;
+background-attachment: scroll;
+}
+</style>
+</head>
+<body>
+<div align="center"><img src="banana.gif"/></div>
+<table align="center" bgcolor="#C4FFCA" border="1" width="97%"  cellpadding="2" cellspacing="7">
+<tr>
+<td>
+<font size="4">&emsp;<strong>テストAnyChBBS</strong></font>
+<br>
+<br>&emsp;テスト用の板です。何でも書いてください。
+<br></td>
+</tr>
+<tr>
+<td align="center"><a href="m"><small>書き込む前に読んでね</small></a>&emsp;<a href="k"><small>ガイドライン</small></a></td>
+</tr>
+</table>
+<br>
+</body>
+</html>
+
+EOF
+
+open(my $fh, '>', $filename) or die "ファイルを開けませんでした '$filename': $!";
+print $fh $html_content;
+close($fh);
