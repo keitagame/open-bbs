@@ -28,11 +28,19 @@ open my $fh, '<', $dat_path
 my @lines = <$fh>;
 close $fh;
 
-print "<html><body>\n";
-print "<h2>$thread_id </h2>\n";
-print "<hr>\n";
+print <<"HTML_HEAD";
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+<title>$thread_id</title>
+</head>
+<body>
+HTML_HEAD
 
-# dat の各行を表示（2ch 形式：名前<>メール<>日付<>本文<>その他）
+
+
 foreach my $line (@lines) {
     chomp $line;
 
@@ -45,15 +53,15 @@ foreach my $line (@lines) {
     my $other   = $fields[4] // '';
 
     # 改行を <br> に変換（最小構成）
-    $body =~ s/\r?\n/<br>/g;
+    $body =~ s/\r?\n/<br>&emsp;&emsp;&ensp;/g;
+    $body =~ s/\r?<br>/<br>&emsp;&emsp;&ensp;/g;
 
     print "<div style='margin-bottom:1em;'>\n";
     print "<b style='color:green;'>$name</b>\n";
     print "<span>$date</span><br>\n";
-    print "$body<br>\n";
+    print "&emsp;&emsp;&ensp;$body<br>\n";
     print "</div>\n";
 }
 
 print "</body></html>\n";
 exit;
-
