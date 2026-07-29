@@ -131,6 +131,11 @@ open my $sfh2, ">", $subject;
 # print $sfh2 @newsubjects;
 open my $sfh2, ">", $subject or die "Cannot write subject.txt: $!";
 
+print "Status: 302 Found\n";
+print "Location: read.cgi/$bbs/$key/\n\n";
+# 3. ブラウザへのレスポンス用ヘッダーを出力（500エラー回避に必須）
+print "Content-Type: text/html; charset=Shift_JIS\n\n";
+
 foreach my $line (@newsubjects) {
     $line =~ s/\r\n/\n/g;
     $line =~ s/\r/\n/g;
@@ -145,10 +150,29 @@ close $sfh2;
 close $sfh2;
 
 
-print "Status: 302 Found\n";
-print "Location: read.cgi/$bbs/$key/\n\n";
-# 3. ブラウザへのレスポンス用ヘッダーを出力（500エラー回避に必須）
-print "Content-Type: text/html; charset=Shift_JIS\n\n";
+my $thread_list_html = "";
+
+foreach my $line (@subjects) {
+    chomp $line;
+    next unless $line;
+    my ($file, $title_with_count) = split(/<>/, $line, 2);
+    next unless ($file && $title_with_count);
+    my ($th_key) = $file =~ /^(\d+)\.dat$/;
+    next unless $th_key;
+   
+    $thread_list_html .= sprintf(
+        '<a href="../test/read.cgi/%s/%s/">%s</a></li>' . "\n",
+        $bbs,
+        $th_key,
+        $title_with_count
+    );
+}
+
+# リストが空だった場合のフォールバック
+if (!$thread_list_html) {
+    $thread_list_html = "<li>現在スレッドはありません。</li>\n";
+}
+
 
 
 my $filename = "$dir/index.html";
@@ -184,6 +208,13 @@ background-attachment: scroll;
 </tr>
 </table>
 <br>
+<table align="center" bgcolor="#C4FFCA" border="1" width="97%"  cellpadding="2" cellspacing="7">
+<tr>
+<td>
+$thread_list_html
+</td>
+</tr>
+</table>
 </body>
 </html>
 
