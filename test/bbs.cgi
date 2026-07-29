@@ -161,7 +161,7 @@ foreach my $line (@subjects) {
     next unless $th_key;
    
     $thread_list_html .= sprintf(
-        '<a href="../test/read.cgi/%s/%s/">%s</a></li>' . "\n",
+        '<a target="_blank" href="../test/read.cgi/%s/%s/">%s</a></li>' . "\n",
         $bbs,
         $th_key,
         $title_with_count
@@ -214,7 +214,7 @@ foreach my $line (@subjects) {
             $name_disp = qq(<b><font color="green">$r_name</font></b>);
         }
         $r_body =~ s/\r?\n/<br>&emsp;&emsp;&ensp;/g;
-        $r_body =~ s/\r?<br>/<br>&emsp;&emsp;&ensp;/g;
+        $r_body =~ s/\r?<br>/<br>/g;
         # レス1件分のHTML
         $responses_html .= sprintf(
             '<dt>%d ：%s：%s</dt><dd> %s <br><br></dd>' . "\n",
@@ -253,7 +253,7 @@ $responses_html
 <textarea id="usermessage" name="MESSAGE" rows="5" cols="65" required></textarea>
 </form>
 <a href="."><strong>リロード</strong></a>&ensp;<a href="/"><strong>板のトップ</strong></a>
-</td></tr></table>
+</td></tr></table><br>
 
 THREAD_END
 }
