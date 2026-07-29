@@ -175,6 +175,90 @@ if (!$thread_list_html) {
 
 
 
+# --- 各スレッドの書き込み（DAT）を読み込んでHTML化する処理 ---
+my $threads_html = "";
+
+# subject.txt の上から順にスレッドを取得（最大10スレッド分など制限も可能）
+foreach my $line (@subjects) {
+    chomp $line;
+    next unless $line;
+
+    my ($file, $title_with_count) = split(/<>/, $line, 2);
+    next unless ($file && $title_with_count);
+
+    my ($th_key) = $file =~ /^(\d+)\.dat$/;
+    next unless $th_key;
+
+    # DATファイルの存在確認と読み込み
+    my $target_dat = "$dir/dat/$file";
+    next unless -e $target_dat;
+
+    open my $dfh, "<", $target_dat or next;
+    my @dat_lines = <$dfh>;
+    close $dfh;
+
+    # スレッド内のレス表示用HTMLを作成
+    my $responses_html = "";
+    my $res_num = 1;
+
+    foreach my $res (@dat_lines) {
+        chomp $res;
+        next unless $res;
+        my ($r_name, $r_mail, $r_time, $r_body) = split(/<>/, $res);
+
+        
+        my $name_disp = $r_name;
+        if ($r_mail) {
+            $name_disp = qq(<a href="mailto:$r_mail"><b>$r_name</b></a>);
+        } else {
+            $name_disp = qq(<b><font color="green">$r_name</font></b>);
+        }
+        $r_body =~ s/\r?\n/<br>&emsp;&emsp;&ensp;/g;
+        $r_body =~ s/\r?<br>/<br>&emsp;&emsp;&ensp;/g;
+        # レス1件分のHTML
+        $responses_html .= sprintf(
+            '<dt>%d ：%s：%s</dt><dd> %s <br><br></dd>' . "\n",
+            $res_num,
+            $name_disp,
+            $r_time,
+            $r_body
+        );
+        $res_num++;
+    }
+
+
+    $threads_html .= <<"THREAD_END";
+<div class="thread-container">
+
+<dl>
+<table align="center" border="1" width="97%"  cellpadding="2" cellspacing="7" bgcolor="#F0F0F0"><tr><td>
+<font color="red" size="5">$title_with_count</font>
+<br><br>
+$responses_html
+
+</dl>
+
+<br>
+<br>
+<form action="/test/bbs.cgi" method="post">
+<input name="bbs" type="hidden" value="$bbs">
+<input name="key" type="hidden" value="$key">
+<button type="submit">書き込む</button>
+<label for="username">名前：</label>
+<input type="text" id="username" width="100" name="FROM" placeholder="名無し"> 
+<label for="useremail">メアド：</label>
+<input type="text" id="useremail" name="mail"> 
+<br>
+<br>
+<textarea id="usermessage" name="MESSAGE" rows="5" cols="65" required></textarea>
+</form>
+<a href="."><strong>リロード</strong></a>&ensp;<a href="/"><strong>板のトップ</strong></a>
+</td></tr></table>
+
+THREAD_END
+}
+
+
 my $filename = "$dir/index.html";
 
 my $html_content = <<"EOF";
@@ -212,9 +296,12 @@ background-attachment: scroll;
 <tr>
 <td>
 $thread_list_html
+
 </td>
 </tr>
+
 </table>
+$threads_html
 </body>
 </html>
 
