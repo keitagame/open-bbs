@@ -1,16 +1,65 @@
 #!/usr/bin/perl
-use strict;
 use warnings;
 use CGI;
 use Digest::MD5 qw(md5_hex);
 my $q = CGI->new;
 
+sub escape_html {
+    my $text = shift;
+    return '' unless defined $text;
+    
+    $text =~ s/&/&amp;/g;
+    $text =~ s/</&lt;/g;
+    $text =~ s/>/&gt;/g;
+    $text =~ s/"/&quot;/g;
+    $text =~ s/'/&#39;/g;
+    
+    return $text;
+}
+
+sub read_setting {
+    my ($setting_path) = @_;
+    my %config;
+
+    if (-e $setting_path) {
+        open my $fh, "<", $setting_path or return %config;
+        while (my $line = <$fh>) {
+            chomp $line;
+            # 空行やコメント行（#から始まる行）をスキップ
+            next if $line =~ /^\s*#/ || $line =~ /^\s*$/;
+            
+            # KEY=VALUE 形式を分割
+            my ($key, $val) = split(/=/, $line, 2);
+            if (defined $key && defined $val) {
+                # 前後の空白を除去
+                $key =~ s/^\s+|\s+$//g;
+                $val =~ s/^\s+|\s+$//g;
+                $config{$key} = $val;
+            }
+        }
+        close $fh;
+    }
+
+    return %config;
+}
+
 my $bbs  = $q->param('bbs');
 my $key  = $q->param('key');
-my $name = $q->param('FROM') || '名無しさん';
-my $mail = $q->param('mail') || '';
-my $body = $q->param('MESSAGE') || '';
+my $subject = $q->param('subject') || 'none';
+my $dir = "../$bbs";
+my $dat = "$dir/dat/$key.dat";
+
+my %setting = read_setting("$dir/setting.txt");
+my $name = escape_html($q->param('FROM')) || $setting{'BBS_NONAME_NAME'};
+my $mail = escape_html($q->param('mail')) || '';
+my $body = escape_html($q->param('MESSAGE')) || '';
 # 改行コード統一
+
+$body =~ s/\r\n/\n/g;
+$body =~ s/\r/\n/g;
+$body =~ s/ / /g;
+$body =~ s/\x{3000}/&#x3000;/g;
+
 $body =~ s/\r\n/\n/g;
 $body =~ s/\r/\n/g;
 
@@ -24,16 +73,71 @@ $body =~ s/\n/<br>/g;
 
 
 
-my $dir = "../$bbs";
-my $dat = "$dir/dat/$key.dat";
 
 
-if (!-e $dat) {
-    print "Content-Type: text/html; charset=UTF-8\n\n";
-    print "<html><body>スレッドがありません。</body></html>";
+my $is_new_thread = ($subject ne 'none') ? 1 : 0;
+
+if ($is_new_thread) {
+    # key が指定されていない場合は現在時刻（Epoch seconds）から生成
+    if (!$key) {
+        $key = int(time());
+    }
+
+    my $dat = "$dir/dat/$key.dat";
+
+    # 時刻表記の生成
+    my @t = localtime();
+    my $time = sprintf(
+        "%04d/%02d/%02d(%s) %02d:%02d:%02d",
+        $t[5]+1900, $t[4]+1, $t[3],
+        (qw(日 月 火 水 木 金 土))[$t[6]],
+        $t[2], $t[1], $t[0]
+    );
+    my $ip = $ENV{'REMOTE_ADDR'} || "0.0.0.0";
+    my $date = sprintf("%04d%02d%02d", $t[5]+1900, $t[4]+1, $t[3]);
+    my $id = uc substr(md5_hex("$ip$date"), 0, 8);
+    my $timecol = "$time ID:$id";
+
+    # 新規 dat 作成（1レス目の末尾にスレッド名を付与する2ch互換形式）
+    my $first_line = join("<>",
+        $name,
+        $mail,
+        $timecol,
+        $body,
+        $subject # 1レス目のみ5番目の要素にスレッド名が入る
+    ) . "\n";
+
+    open my $fh, ">", $dat or die "Cannot create dat: $!";
+    print $fh $first_line;
+    close $fh;
+
+    # subject.txt の読み込みと先頭への挿入
+    my $subject_file = "$dir/subject.txt";
+    my @subjects;
+    if (-e $subject_file) {
+        open my $sfh, "<", $subject_file;
+        @subjects = <$sfh>;
+        close $sfh;
+    }
+
+    # 一番上（先頭）に新しいスレッドを追加（レス数は 1）
+    unshift @subjects, "$key.dat<>$subject (1)\n";
+
+    # subject.txt の更新保存
+    open my $sfh2, ">", $subject_file or die "Cannot write subject.txt: $!";
+    foreach my $line (@subjects) {
+        $line =~ s/\r\n/\n/g;
+        $line =~ s/\r/\n/g;
+        $line =~ s/\n$//;
+        print $sfh2 $line . "\n";
+    }
+    close $sfh2;
+
+    # スレッド作成後のリダイレクト
+    print "Status: 302 Found\n";
+    print "Location: read.cgi/$bbs/$key/\n\n";
     exit;
 }
-
 
 open my $fh, "<", $dat or die "Cannot open dat: $!";
 my @lines = <$fh>;
@@ -68,7 +172,6 @@ my $newline = join("<>",
     $body,
     ""
 ) . "\n";
-
 
 open my $fh2, ">>", $dat or die "Cannot write dat: $!";
 print $fh2 $newline;
@@ -133,6 +236,7 @@ open my $sfh2, ">", $subject or die "Cannot write subject.txt: $!";
 
 print "Status: 302 Found\n";
 print "Location: read.cgi/$bbs/$key/\n\n";
+
 # 3. ブラウザへのレスポンス用ヘッダーを出力（500エラー回避に必須）
 print "Content-Type: text/html; charset=Shift_JIS\n\n";
 
@@ -140,7 +244,7 @@ foreach my $line (@newsubjects) {
     $line =~ s/\r\n/\n/g;
     $line =~ s/\r/\n/g;
 
-    
+ 
     $line =~ s/\n$//;
     print $sfh2 $line . "\n";
 }
@@ -215,7 +319,12 @@ foreach my $line (@subjects) {
         }
         $r_body =~ s/\r?\n/<br>&emsp;&emsp;&ensp;/g;
         $r_body =~ s/\r?<br>/<br>/g;
-        # レス1件分のHTML
+        $r_body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{<a href="$1" target="_blank">$1</a>}gi;
+
+
+        $r_body =~ s{>>(\d+)}{<a target="_blank" href="../test/read.cgi/$bbs/$th_key/?anchor=$1#res$1">>>$1</a>}g;
+        $r_body =~ s{&gt;&gt;(\d+)}{<a target="_blank" href="../test/read.cgi/$bbs/$th_key/?anchor=$1#res$1">>>$1</a>}g;
+
         $responses_html .= sprintf(
             '<dt>%d ：%s：%s</dt><dd> %s <br><br></dd>' . "\n",
             $res_num,
@@ -242,7 +351,7 @@ $responses_html
 <br>
 <form action="/test/bbs.cgi" method="post">
 <input name="bbs" type="hidden" value="$bbs">
-<input name="key" type="hidden" value="$key">
+<input name="key" type="hidden" value="$th_key">
 <button type="submit">書き込む</button>
 <label for="username">名前：</label>
 <input type="text" id="username" width="100" name="FROM" placeholder="名無し"> 
@@ -282,7 +391,7 @@ background-attachment: scroll;
 <table align="center" bgcolor="#C4FFCA" border="1" width="97%"  cellpadding="2" cellspacing="7">
 <tr>
 <td>
-<font size="4">&emsp;<strong>テストAnyChBBS</strong></font>
+<font size="4">&emsp;<strong>$setting{'BBS_TITLE'}</strong></font>
 <br>
 <br>&emsp;テスト用の板です。何でも書いてください。
 <br></td>
@@ -302,6 +411,25 @@ $thread_list_html
 
 </table>
 $threads_html
+<table align="center" bgcolor="#C4FFCA" border="1" width="97%"  cellpadding="2" cellspacing="7">
+<tr>
+<td>
+<div>新規スレ立て</div>
+<form action="/test/bbs.cgi" method="post">
+<input name="bbs" type="hidden" value="$bbs">
+<button type="submit">スレ立て</button>
+<label for="username">名前（スレ）：</label>
+<input type="text" id="username" width="100" name="subject" placeholder="スレタイ">
+<label for="name">名前：</label>
+<input type="text" id="name" width="100" name="FROM" placeholder="名無し">  
+<label for="useremail">メアド：</label>
+<input type="text" id="useremail" name="mail"> 
+<br>
+<br>
+<textarea id="usermessage" name="MESSAGE" rows="5" cols="65" required></textarea>
+</form>
+</td>
+</tr>
 </body>
 </html>
 
