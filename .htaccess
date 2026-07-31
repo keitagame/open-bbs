@@ -1,0 +1,5 @@
+Options +ExecCGI
+AddHandler cgi-script .cgi
+AcceptPathInfo On
+SetEnvIf Request_URI ".*" Ngx_Cache_NoCacheMode
+DirectoryIndex index.html read.cgi
