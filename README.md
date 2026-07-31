@@ -1,1 +1,2 @@
 # open-bbs
+AnyChBBSのスクリプト群
