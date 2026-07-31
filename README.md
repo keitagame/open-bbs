@@ -1,3 +1,3 @@
 # open-bbs
-AnyChBBSのスクリプト群
+AnyChBBSのスクリプト群<br>
 クソコードですまない。
