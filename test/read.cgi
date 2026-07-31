@@ -49,7 +49,7 @@ print <<"HTML_HEAD";
 </head>
 <body bgcolor="#F0F0F0">
 <br>
-<a target="_blank" href="http://shinte.tech"><strong>トップへ</strong></a>&ensp;<a href="http://shinte.tech/$bbs_id/"><strong>■掲示板に戻る</strong></a>
+<a target="_blank" href="/"><strong>トップへ</strong></a>&ensp;<a href="/$bbs_id/"><strong>■掲示板に戻る</strong></a>
 <hr>
 <font size="5" color="red">$thread_title</font>
 <br><br>
@@ -105,7 +105,7 @@ for (my $i = $start_idx; $i <= $end_idx; $i++) {
     my $num = $i + 1; # 配列のインデックスに1を足してレス番号にする
     my $highlight = ($anchor && $anchor == $num) ? "background-color:#FFFFCC;" : "";
 
-    print "<div id='res$num' style='margin-bottom:1em; $highlight'>$num：\n";
+    print "<div id='res$num' style='margin-bottom:1em; word-break: break-all; word-wrap: break-word;$highlight'>$num：\n";
 
     # print "<div style='margin-bottom:1em;'>$num：\n";
     print "<b style='color:green;'>$name</b>：\n";
