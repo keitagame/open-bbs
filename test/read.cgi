@@ -49,7 +49,7 @@ print <<"HTML_HEAD";
 </head>
 <body bgcolor="#F0F0F0">
 <br>
-<a target="_blank" href="/"><strong>トップへ</strong></a>&ensp;<a href="/$bbs_id/"><strong>■掲示板に戻る</strong></a>
+<a target="_blank" href="/"><strong>トップへ</strong></a>&ensp;<a href="/itas/$bbs_id/"><strong>■掲示板に戻る</strong></a>
 <hr>
 <font size="5" color="red">$thread_title</font>
 <br><br>
@@ -97,8 +97,17 @@ for (my $i = $start_idx; $i <= $end_idx; $i++) {
     $body =~ s/\r?&lt;br&gt;/<br>&emsp;&emsp;&ensp;/g;
     $body =~ s/\r?<br>/<br>&emsp;&emsp;&ensp;/g;
     
-    $body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{<a href="$1" target="_blank">$1</a>}gi;
-
+    #$body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{<a href="$1" target="_blank">$1</a>}gi;
+$body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{
+                my $url = $1;
+    if ($url =~ /\.(amp;)?(jpe?g|png|gif|webp)$/i) {
+        
+        qq|<a href="$url" target="_blank"><img src="$url" style="max-width: 50%; height: auto; display: block;" /></a>|;
+    } else {
+        # 通常のリンクの場合
+        qq|<a href="$url" target="_blank">$url</a>|;
+    }
+}gie;
 
     $body =~ s{>>(\d+)}{<a href="#res$1">>>$1</a>}g;
     $body =~ s{&gt;&gt;(\d+)}{<a href="?anchor=$1#res$1">>>$1</a>}g;
