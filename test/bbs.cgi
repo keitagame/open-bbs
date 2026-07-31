@@ -201,7 +201,18 @@ print "Content-Type: text/html; charset=Shift_JIS\n";
             }
             $r_body =~ s/\r?\n/<br>&emsp;&emsp;&ensp;/g;
             $r_body =~ s/\r?<br>/<br>/g;
-            $r_body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{<a href="$1" target="_blank">$1</a>}gi;
+$r_body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{
+                my $url = $1;
+    if ($url =~ /\.(amp;)?(jpe?g|png|gif|webp)$/i) {
+        
+        qq|<a href="$url" target="_blank"><img src="$url" style="max-width: 50%; height: auto; display: block;" /></a>|;
+    } else {
+        # 通常のリンクの場合
+        qq|<a href="$url" target="_blank">$url</a>|;
+    }
+}gie;
+
+            #$r_body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{<a href="$1" target="_blank">$1</a>}gi;
             $r_body =~ s{>>(\d+)}{<a target="_blank" href="../test/read.cgi/$bbs/$th_key/?anchor=$1#res$1">>>$1</a>}g;
             $r_body =~ s{&gt;&gt;(\d+)}{<a target="_blank" href="../test/read.cgi/$bbs/$th_key/?anchor=$1#res$1">>>$1</a>}g;
 
@@ -224,7 +235,7 @@ print "Content-Type: text/html; charset=Shift_JIS\n";
 $responses_html
 </dl>
 <br><br>
-<form action="/test/bbs.cgi" method="post">
+<form action="../test/bbs.cgi" method="post">
 <input name="bbs" type="hidden" value="$bbs">
 <input name="key" type="hidden" value="$th_key">
 <button type="submit">書き込む</button>
@@ -287,7 +298,7 @@ $threads_html
 <tr>
 <td>
 <div>新規スレ立て</div>
-<form action="/test/bbs.cgi" method="post">
+<form action="../test/bbs.cgi" method="post">
 <input name="bbs" type="hidden" value="$bbs">
 <button type="submit">スレ立て</button>
 <label for="username">名前（スレ）：</label>
@@ -480,7 +491,7 @@ print << "EOF";
 画面を切り替えるまでしばらくお待ち下さい。<br>
 <br>
 [<a href="../$bbs/">掲示板に戻る</a>] 
-[<a href="test/read.cgi/$bbs/$key">スレッドに戻る</a>]
+[<a href="../test/read.cgi/$bbs/$key">スレッドに戻る</a>]
 
 </body>
 </html>
@@ -568,7 +579,17 @@ foreach my $line (@subjects) {
         }
         $r_body =~ s/\r?\n/<br>&emsp;&emsp;&ensp;/g;
         $r_body =~ s/\r?<br>/<br>/g;
-        $r_body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{<a href="$1" target="_blank">$1</a>}gi;
+        # $r_body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{<a href="$1" target="_blank">$1</a>}gi;
+        $r_body =~ s{(https?://[\w\.\-_/:%#\?\=&]+)}{
+    my $url = $1;
+    if ($url =~ /\.(amp;)?(jpe?g|png|gif|webp)$/i) {
+        # 画像の場合：はみ出さないスタイルを指定したimgタグ
+        qq|<a href="$url" target="_blank"><img src="$url" style="max-width: 50%; height: auto; display: block;" /></a>|;
+    } else {
+        # 通常のリンクの場合
+        qq|<a href="$url" target="_blank">$url</a>|;
+    }
+}gie;
 
 
         $r_body =~ s{>>(\d+)}{<a target="_blank" href="../test/read.cgi/$bbs/$th_key/?anchor=$1#res$1">>>$1</a>}g;
@@ -598,7 +619,7 @@ $responses_html
 
 <br>
 <br>
-<form action="/test/bbs.cgi" method="post">
+<form action="../test/bbs.cgi" method="post">
 <input name="bbs" type="hidden" value="$bbs">
 <input name="key" type="hidden" value="$th_key">
 <button type="submit">書き込む</button>
@@ -667,7 +688,7 @@ $threads_html
 <tr>
 <td>
 <div>新規スレ立て</div>
-<form action="/test/bbs.cgi" method="post">
+<form action="../test/bbs.cgi" method="post">
 <input name="bbs" type="hidden" value="$bbs">
 <button type="submit">スレ立て</button>
 <label for="username">名前（スレ）：</label>
