@@ -1,3 +1,4 @@
+![アイコン](favicon.webp "転載禁止")
 # open-bbs
 AnyChBBSのスクリプト群<br>
 クソコードですまない。<br>
