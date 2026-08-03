@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>板まるごとリアルタイム監視（最新30件）</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        h1 { font-size: 1.5em; margin-bottom: 10px; }
+        #global-status { background: #333; color: #fff; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-bottom: 20px; }
+        #timeline { display: flex; flex-direction: column; /* 上が新しく、下が古くなる設定 */ }
+        .res-card {  border-radius: 6px; padding: 1px; margin-bottom: 5px;}
+        .thread-origin { font-size: 0.8em; color: #0066cc; font-weight: bold; margin-bottom: 6px; border-bottom: 1px dashed #ddd; padding-bottom: 4px; }
+        .res-header { font-size: 0.85em; color: #555; margin-bottom: 4px; }
+        .res-num { font-weight: bold; color: #111; }
+        .res-name { color: #228b22; font-weight: bold; }
+        .res-body { font-size: 0.95em; line-height: 1.5; white-space: pre-wrap; word-break: break-all; margin-top: 6px; }
+    </style>
+</head>
+<body>
+<div style="display:none">
+    <h1>板まるごとリアルタイムタイムライン（最新30件限定）</h1>
+    <div id="global-status">初期化中...</div>
+    </div>
+    <!-- ここに全スレッドの新着レスが最新30件まで表示される -->
+    <div id="timeline"></div>
+
+    <script>
+        const BOARD_BASE_URL = './'; // 同一ディレクトリにsubject.txtとdat群がある想定
+        const REFRESH_INTERVAL = 1500; // 巡回間隔（15秒）
+        const MAX_DISPLAY_COUNT = 30; // 画面に表示する最大レス数
+
+        let threadMap = {};
+        let isFirstLoad = true;
+
+        function decodeShiftJIS(arrayBuffer) {
+            return new TextDecoder('shift-jis').decode(arrayBuffer);
+        }
+
+        // 1. 板の全スレッドリスト(subject.txt)を取得
+        async function updateThreadList() {
+            try {
+                document.getElementById('global-status').innerText = 'スレッド一覧を更新中...';
+                const response = await fetch(`${BOARD_BASE_URL}subject.txt`, { cache: 'no-store' });
+                if (!response.ok) throw new Error('subject.txtの取得失敗');
+
+                const buffer = await response.arrayBuffer();
+                const text = decodeShiftJIS(buffer);
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+
+                lines.forEach(line => {
+                    const match = line.match(/^(.+\.dat)<>(.+)\s\((\d+)\)$/);
+                    if (match) {
+                        const datFile = match[1];
+                        const threadTitle = match[2];
+                        
+                        if (!threadMap[datFile]) {
+                            threadMap[datFile] = {
+                                title: threadTitle,
+                                currentCount: 0
+                            };
+                        }
+                    }
+                });
+                
+                document.getElementById('global-status').innerText = `監視対象スレッド数: ${Object.keys(threadMap).length} 件`;
+            } catch (e) {
+                console.error('subject取得エラー:', e);
+                document.getElementById('global-status').innerText = 'エラー: subject.txtが読めません';
+            }
+        }
+
+        // 2. 特定の単一datファイルをチェックして新着を描画
+        async function checkSingleDat(datFile) {
+            try {
+                const threadInfo = threadMap[datFile];
+                const response = await fetch(`${BOARD_BASE_URL}dat/${datFile}`, { cache: 'no-store' });
+                if (!response.ok) return;
+
+                const buffer = await response.arrayBuffer();
+                const text = decodeShiftJIS(buffer);
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+
+                if (lines.length <= threadInfo.currentCount) {
+                    return;
+                }
+
+                // 初回起動時の大量読み込み防止（各スレ最新の1件だけにする）
+                let startIndex = threadInfo.currentCount;
+                if (isFirstLoad && lines.length > 1) {
+                    startIndex = lines.length - 1; 
+                }
+
+                const timeline = document.getElementById('timeline');
+
+                for (let i = startIndex; i < lines.length; i++) {
+                    const elements = lines[i].split('<>');
+                    if (elements.length < 4) continue;
+
+                    const resNum = i + 1;
+                    const name = elements[0] || '名無しさん';
+                    const email = elements[1];
+                    const dateAndId = elements[2];
+                    const body = elements[3].replace(/<br>/g, '\n');
+
+                    // カードの生成
+                    const card = document.createElement('div');
+                    card.className = 'res-card';
+
+                    const origin = document.createElement('div');
+                    origin.className = 'thread-origin';
+                    origin.innerText = `[スレ] ${threadInfo.title}`;
+
+                    const header = document.createElement('div');
+                    header.className = 'res-header';
+                    header.innerHTML = `<span class="res-num">${resNum}</span> : <span class="res-name">${name}</span> [${email}] ${dateAndId}`;
+
+                    const bodyDiv = document.createElement('div');
+                    bodyDiv.className = 'res-body';
+                    bodyDiv.textContent = body;
+
+                    card.appendChild(origin);
+                    card.appendChild(header);
+                    card.appendChild(bodyDiv);
+                    
+                    // 【ポイント】先頭（一番上）に新しいレスを追加する
+                    timeline.insertBefore(card, timeline.firstChild);
+
+                    // 【ポイント】画面上のレス数が30件を超えたら、一番古いもの（最後尾）を削除
+                    while (timeline.children.length > MAX_DISPLAY_COUNT) {
+                        timeline.removeChild(timeline.lastChild);
+                    }
+                }
+
+                threadInfo.currentCount = lines.length;
+
+            } catch (e) {
+                console.warn(`dat取得エラー (${datFile}):`, e);
+            }
+        }
+
+        // 3. 全スレッドの巡回タスク
+        async function crawlAllDats() {
+            document.getElementById('global-status').innerText = '全スレッドのdatを巡回中...';
+            
+            const datFiles = Object.keys(threadMap);
+            
+            for (const datFile of datFiles) {
+                await checkSingleDat(datFile);
+                await new Promise(resolve => setTimeout(resolve, 50)); // 負荷軽減のディレイ
+            }
+
+            isFirstLoad = false;
+            document.getElementById('global-status').innerText = `巡回完了。待機中... (監視中: ${datFiles.length}スレ)`;
+        }
+
+        // メイン処理のループ
+        async function mainSystem() {
+            await updateThreadList();
+            await crawlAllDats();
+            
+            setInterval(async () => {
+                await updateThreadList();
+                await crawlAllDats();
+            }, REFRESH_INTERVAL);
+        }
+
+        mainSystem();
+    </script>
+</body>
+</html>
