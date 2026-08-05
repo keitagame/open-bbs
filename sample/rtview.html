@@ -1,170 +1,151 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>板まるごとリアルタイム監視（最新30件）</title>
-    <style>
-        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
-        h1 { font-size: 1.5em; margin-bottom: 10px; }
-        #global-status { background: #333; color: #fff; padding: 10px; border-radius: 4px; font-size: 0.9em; margin-bottom: 20px; }
-        #timeline { display: flex; flex-direction: column; /* 上が新しく、下が古くなる設定 */ }
-        .res-card {  border-radius: 6px; padding: 1px; margin-bottom: 5px;}
-        .thread-origin { font-size: 0.8em; color: #0066cc; font-weight: bold; margin-bottom: 6px; border-bottom: 1px dashed #ddd; padding-bottom: 4px; }
-        .res-header { font-size: 0.85em; color: #555; margin-bottom: 4px; }
-        .res-num { font-weight: bold; color: #111; }
-        .res-name { color: #228b22; font-weight: bold; }
-        .res-body { font-size: 0.95em; line-height: 1.5; white-space: pre-wrap; word-break: break-all; margin-top: 6px; }
-    </style>
+<meta charset="UTF-8">
+<title>板まるごとリアルタイム監視（最新30件）</title>
+<style>
+    body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+    #timeline { display: flex; flex-direction: column; }
+    .res-card { border-radius: 6px; padding: 10px; margin-bottom: 5px; background: #fff; }
+    .thread-origin { font-size: 0.8em; color: #0066cc; font-weight: bold; margin-bottom: 6px; border-bottom: 1px dashed #ddd; padding-bottom: 4px; }
+    .res-header { font-size: 0.85em; color: #555; margin-bottom: 4px; }
+    .res-num { font-weight: bold; color: #111; }
+    .res-name { color: #228b22; font-weight: bold; }
+    .res-body { font-size: 0.95em; line-height: 1.5; white-space: pre-wrap; word-break: break-all; margin-top: 6px; }
+</style>
 </head>
 <body>
-<div style="display:none">
-    <h1>板まるごとリアルタイムタイムライン（最新30件限定）</h1>
-    <div id="global-status">初期化中...</div>
-    </div>
-    <!-- ここに全スレッドの新着レスが最新30件まで表示される -->
-    <div id="timeline"></div>
 
-    <script>
-        const BOARD_BASE_URL = './'; // 同一ディレクトリにsubject.txtとdat群がある想定
-        const REFRESH_INTERVAL = 1500; // 巡回間隔（15秒）
-        const MAX_DISPLAY_COUNT = 30; // 画面に表示する最大レス数
+<div id="timeline"></div>
 
-        let threadMap = {};
-        let isFirstLoad = true;
+<script>
+const BOARD_BASE_URL = './';
+const REFRESH_INTERVAL = 1500;
 
-        function decodeShiftJIS(arrayBuffer) {
-            return new TextDecoder('shift-jis').decode(arrayBuffer);
-        }
+let threadMap = {};
 
-        // 1. 板の全スレッドリスト(subject.txt)を取得
-        async function updateThreadList() {
-            try {
-                document.getElementById('global-status').innerText = 'スレッド一覧を更新中...';
-                const response = await fetch(`${BOARD_BASE_URL}subject.txt`, { cache: 'no-store' });
-                if (!response.ok) throw new Error('subject.txtの取得失敗');
+function decodeShiftJIS(buf) {
+    return new TextDecoder('shift-jis').decode(buf);
+}
 
-                const buffer = await response.arrayBuffer();
-                const text = decodeShiftJIS(buffer);
-                const lines = text.split('\n').filter(line => line.trim() !== '');
+// subject.txt を読む
+async function updateThreadList() {
+    const res = await fetch(`${BOARD_BASE_URL}subject.txt`, { cache: 'no-store' });
+    const buf = await res.arrayBuffer();
+    const text = decodeShiftJIS(buf);
 
-                lines.forEach(line => {
-                    const match = line.match(/^(.+\.dat)<>(.+)\s\((\d+)\)$/);
-                    if (match) {
-                        const datFile = match[1];
-                        const threadTitle = match[2];
-                        
-                        if (!threadMap[datFile]) {
-                            threadMap[datFile] = {
-                                title: threadTitle,
-                                currentCount: 0
-                            };
-                        }
-                    }
-                });
-                
-                document.getElementById('global-status').innerText = `監視対象スレッド数: ${Object.keys(threadMap).length} 件`;
-            } catch (e) {
-                console.error('subject取得エラー:', e);
-                document.getElementById('global-status').innerText = 'エラー: subject.txtが読めません';
+    text.split('\n').forEach(line => {
+        const m = line.match(/^(.+\.dat)<>(.+)\s\((\d+)\)$/);
+        if (m) {
+            const datFile = m[1];
+            const title = m[2];
+            if (!threadMap[datFile]) {
+                threadMap[datFile] = { title };
             }
         }
+    });
+}
 
-        // 2. 特定の単一datファイルをチェックして新着を描画
-        async function checkSingleDat(datFile) {
-            try {
-                const threadInfo = threadMap[datFile];
-                const response = await fetch(`${BOARD_BASE_URL}dat/${datFile}`, { cache: 'no-store' });
-                if (!response.ok) return;
+// 日付文字列を UNIX 時間に変換（2ch形式）
+function parse2chDate(str) {
+    // 例: "2024/02/01(木) 12:34:56.12 ID:xxxx"
+    const m = str.match(/(\d{4})\/(\d{2})\/(\d{2}).*?(\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return 0;
+    const [_, y, mo, d, h, mi, s] = m.map(Number);
+    return new Date(y, mo - 1, d, h, mi, s).getTime();
+}
 
-                const buffer = await response.arrayBuffer();
-                const text = decodeShiftJIS(buffer);
-                const lines = text.split('\n').filter(line => line.trim() !== '');
+// dat を読み、レスを配列化
+async function readDat(datFile) {
+    try {
+        const res = await fetch(`${BOARD_BASE_URL}dat/${datFile}`, { cache: 'no-store' });
+        if (!res.ok) return [];
 
-                if (lines.length <= threadInfo.currentCount) {
-                    return;
-                }
+        const buf = await res.arrayBuffer();
+        const text = decodeShiftJIS(buf);
+        const lines = text.split('\n').filter(x => x.trim() !== '');
 
-                // 初回起動時の大量読み込み防止（各スレ最新の1件だけにする）
-                let startIndex = threadInfo.currentCount;
-                if (isFirstLoad && lines.length > 1) {
-                    startIndex = lines.length - 1; 
-                }
+        const threadTitle = threadMap[datFile].title;
 
-                const timeline = document.getElementById('timeline');
+        return lines.map((line, idx) => {
+            const el = line.split('<>');
+            if (el.length < 4) return null;
 
-                for (let i = startIndex; i < lines.length; i++) {
-                    const elements = lines[i].split('<>');
-                    if (elements.length < 4) continue;
+            const name = el[0] || '名無しさん';
+            const email = el[1];
+            const dateAndId = el[2];
+            const body = el[3].replace(/<br>/g, '\n');
 
-                    const resNum = i + 1;
-                    const name = elements[0] || '名無しさん';
-                    const email = elements[1];
-                    const dateAndId = elements[2];
-                    const body = elements[3].replace(/<br>/g, '\n');
+            return {
+                datFile,
+                threadTitle,
+                resNum: idx + 1,
+                name,
+                email,
+                dateAndId,
+                body,
+                timestamp: parse2chDate(dateAndId)
+            };
+        }).filter(Boolean);
 
-                    // カードの生成
-                    const card = document.createElement('div');
-                    card.className = 'res-card';
+    } catch (e) {
+        console.warn("dat error:", datFile, e);
+        return [];
+    }
+}
 
-                    const origin = document.createElement('div');
-                    origin.className = 'thread-origin';
-                    origin.innerText = `[スレ] ${threadInfo.title}`;
+// 全 dat を読み、全レスを時系列で 30 件だけ描画
+async function crawlAll() {
+    let allRes = [];
 
-                    const header = document.createElement('div');
-                    header.className = 'res-header';
-                    header.innerHTML = `<span class="res-num">${resNum}</span> : <span class="res-name">${name}</span> [${email}] ${dateAndId}`;
+    for (const datFile of Object.keys(threadMap)) {
+        const resList = await readDat(datFile);
+        allRes.push(...resList);
+        await new Promise(r => setTimeout(r, 30)); // 軽い負荷分散
+    }
 
-                    const bodyDiv = document.createElement('div');
-                    bodyDiv.className = 'res-body';
-                    bodyDiv.textContent = body;
+    // 時系列で新しい順にソート
+    allRes.sort((a, b) => b.timestamp - a.timestamp);
 
-                    card.appendChild(origin);
-                    card.appendChild(header);
-                    card.appendChild(bodyDiv);
-                    
-                    // 【ポイント】先頭（一番上）に新しいレスを追加する
-                    timeline.insertBefore(card, timeline.firstChild);
+    // 最新30件だけ
+    const latest = allRes.slice(0, 30);
 
-                    // 【ポイント】画面上のレス数が30件を超えたら、一番古いもの（最後尾）を削除
-                    while (timeline.children.length > MAX_DISPLAY_COUNT) {
-                        timeline.removeChild(timeline.lastChild);
-                    }
-                }
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = '';
 
-                threadInfo.currentCount = lines.length;
+    latest.forEach(res => {
+        const card = document.createElement('div');
+        card.className = 'res-card';
 
-            } catch (e) {
-                console.warn(`dat取得エラー (${datFile}):`, e);
-            }
-        }
+        const origin = document.createElement('div');
+        origin.className = 'thread-origin';
+        origin.textContent = `[スレ] ${res.threadTitle}`;
 
-        // 3. 全スレッドの巡回タスク
-        async function crawlAllDats() {
-            document.getElementById('global-status').innerText = '全スレッドのdatを巡回中...';
-            
-            const datFiles = Object.keys(threadMap);
-            
-            for (const datFile of datFiles) {
-                await checkSingleDat(datFile);
-                await new Promise(resolve => setTimeout(resolve, 50)); // 負荷軽減のディレイ
-            }
+        const header = document.createElement('div');
+        header.className = 'res-header';
+        header.innerHTML =
+            `<span class="res-num">${res.resNum}</span> : ` +
+            `<span class="res-name">${res.name}</span> [${res.email}] ${res.dateAndId}`;
 
-            isFirstLoad = false;
-            document.getElementById('global-status').innerText = `巡回完了。待機中... (監視中: ${datFiles.length}スレ)`;
-        }
+        const body = document.createElement('div');
+        body.className = 'res-body';
+        body.textContent = res.body;
 
-        // メイン処理のループ
-        async function mainSystem() {
-            await updateThreadList();
-            await crawlAllDats();
-            
-            setInterval(async () => {
-                await updateThreadList();
-                await crawlAllDats();
-            }, REFRESH_INTERVAL);
-        }
+        card.appendChild(origin);
+        card.appendChild(header);
+        card.appendChild(body);
 
-        mainSystem();
-    </script>
+        timeline.appendChild(card);
+    });
+}
+
+async function main() {
+    await updateThreadList();
+    await crawlAll();
+    setInterval(crawlAll, REFRESH_INTERVAL);
+}
+
+main();
+</script>
 </body>
 </html>
