@@ -311,7 +311,7 @@ body {
 <font size="4">&emsp;<strong>$bbs_title</strong></font>
 <br><br><br><br><br><br>
 </td></tr>
-<tr><td align="center"><a target="_top" href="https://shinte.tech"><small>トップへ</small></a>&emsp;<a href="/test/headline.cgi?bbs=$bbs"><small>ヘッドライン</small></a></td></tr>
+<tr><td align="center"><a target="_top" href="/"><small>トップへ</small></a>&emsp;<a href="/test/headline.cgi?bbs=$bbs"><small>ヘッドライン</small></a></td></tr>
 </table>
 <br>
 <table align="center" bgcolor="#C4FFCA" border="1" height="150" width="97%" cellpadding="2" cellspacing="7">
