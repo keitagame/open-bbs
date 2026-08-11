@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # =========================================================================
-#  bbs.cgi - æ–°è¦ã‚¹ãƒ¬ãƒƒãƒ‰ä½œæˆ / ãƒ¬ã‚¹æŠ•ç¨¿ã‚’å‡¦ç†ã™ã‚‹
+#  bbs.cgi - V‹KƒXƒŒƒbƒhì¬ / ƒŒƒX“Še‚ğˆ—‚·‚é
 # =========================================================================
 use strict;
 use CGI::Carp qw(fatalsToBrowser);
@@ -17,49 +17,49 @@ use BBSCommon qw(
 my $q = CGI->new;
 
 # -------------------------------------------------------------------
-# å…±é€šã‚¨ãƒ©ãƒ¼è¡¨ç¤º
+# ‹¤’ÊƒGƒ‰[•\¦
 # -------------------------------------------------------------------
 sub error_exit {
     my ($message) = @_;
     print html_header();
     print <<"EOF";
-<html><head><title>ã‚¨ãƒ©ãƒ¼</title><meta charset="Shift_JIS"></head>
+<html><head><title>ƒGƒ‰[</title><meta charset="Shift_JIS"></head>
 <body>
-<b>ã‚¨ãƒ©ãƒ¼: $message</b><br>
+<b>ƒGƒ‰[: $message</b><br>
 <br>
-[<a href="../">ãƒˆãƒƒãƒ—ã«æˆ»ã‚‹</a>]
+[<a href="../">ƒgƒbƒv‚É–ß‚é</a>]
 </body></html>
 EOF
     exit;
 }
 
 # -------------------------------------------------------------------
-# POST ä»¥å¤–ã¯å—ã‘ä»˜ã‘ãªã„
+# POST ˆÈŠO‚Íó‚¯•t‚¯‚È‚¢
 # -------------------------------------------------------------------
 if (uc($ENV{REQUEST_METHOD} || '') ne 'POST') {
-    error_exit('ä¸æ­£ãªãƒªã‚¯ã‚¨ã‚¹ãƒˆã§ã™ã€‚');
+    error_exit('•s³‚ÈƒŠƒNƒGƒXƒg‚Å‚·B');
 }
 
 # -------------------------------------------------------------------
-# å…¥åŠ›å–å¾—ãƒ»ãƒãƒªãƒ‡ãƒ¼ã‚·ãƒ§ãƒ³ï¼ˆã“ã“ã§æ¿ID/ã‚­ãƒ¼ã‚’æ¤œè¨¼ã—ãªã„ã¨
-# ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªãƒˆãƒ©ãƒãƒ¼ã‚µãƒ«ã§ã‚µãƒ¼ãƒä¸Šã®ä»»æ„ãƒ•ã‚¡ã‚¤ãƒ«ã‚’æ“ä½œã•ã‚Œã†ã‚‹ï¼‰
+# “ü—Íæ“¾EƒoƒŠƒf[ƒVƒ‡ƒ“i‚±‚±‚Å”ÂID/ƒL[‚ğŒŸØ‚µ‚È‚¢‚Æ
+# ƒfƒBƒŒƒNƒgƒŠƒgƒ‰ƒo[ƒTƒ‹‚ÅƒT[ƒoã‚Ì”CˆÓƒtƒ@ƒCƒ‹‚ğ‘€ì‚³‚ê‚¤‚éj
 # -------------------------------------------------------------------
 my $bbs     = $q->param('bbs')     || '';
 my $key     = $q->param('key')     || '';
 my $subject = $q->param('subject') || '';
 $subject =~ s/^\s+|\s+$//g;
 
-error_exit('æ²ç¤ºæ¿IDãŒä¸æ­£ã§ã™ã€‚') unless valid_bbs_id($bbs);
-error_exit('ã‚¹ãƒ¬ãƒƒãƒ‰ã‚­ãƒ¼ãŒä¸æ­£ã§ã™ã€‚') if ($key ne '' && !valid_key($key));
+error_exit('Œf¦”ÂID‚ª•s³‚Å‚·B') unless valid_bbs_id($bbs);
+error_exit('ƒXƒŒƒbƒhƒL[‚ª•s³‚Å‚·B') if ($key ne '' && !valid_key($key));
 
 my $dir = "../$bbs";
-error_exit('æŒ‡å®šã•ã‚ŒãŸæ²ç¤ºæ¿ã¯å­˜åœ¨ã—ã¾ã›ã‚“ã€‚') unless -d $dir;
+error_exit('w’è‚³‚ê‚½Œf¦”Â‚Í‘¶İ‚µ‚Ü‚¹‚ñB') unless -d $dir;
 mkdir "$dir/dat" unless -d "$dir/dat";
 
 my %setting = read_setting("$dir/setting.txt");
 my $max_threads = $setting{BBS_MAX_THREADS} || 100;
 my $max_res     = $setting{BBS_RES_MAX}     || 1000;
-my $noname      = $setting{BBS_NONAME_NAME} || 'åç„¡ã—ã•ã‚“';
+my $noname      = $setting{BBS_NONAME_NAME} || '–¼–³‚µ‚³‚ñ';
 
 my $name = escape_html($q->param('FROM'));
 $name = $noname unless length $name;
@@ -69,14 +69,14 @@ my $body = escape_html($q->param('MESSAGE'));
 $body = '' unless defined $body;
 $body =~ s/\r\n/\n/g;
 $body =~ s/\r/\n/g;
-$body =~ s/\x{3000}/&#x3000;/g;   # å…¨è§’ã‚¹ãƒšãƒ¼ã‚¹
+$body =~ s/\x{3000}/&#x3000;/g;   # ‘SŠpƒXƒy[ƒX
 $body =~ s/\n/<br>/g;
 $body =~ s/^(?:<br>)+//;
 $body =~ s/(?:<br>)+$//;
 
-error_exit('æœ¬æ–‡ã‚’å…¥åŠ›ã—ã¦ãã ã•ã„ã€‚') unless length $body;
-error_exit('æœ¬æ–‡ãŒé•·ã™ãã¾ã™ã€‚') if length($body) > 4000;
-error_exit('åå‰ãŒé•·ã™ãã¾ã™ã€‚') if length($name) > 100;
+error_exit('–{•¶‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢B') unless length $body;
+error_exit('–{•¶‚ª’·‚·‚¬‚Ü‚·B') if length($body) > 4000;
+error_exit('–¼‘O‚ª’·‚·‚¬‚Ü‚·B') if length($name) > 100;
 
 my $ip = $ENV{REMOTE_ADDR} || '0.0.0.0';
 my $timecol = now_timecol($ip);
@@ -84,12 +84,12 @@ my $timecol = now_timecol($ip);
 my $is_new_thread = (length $subject) ? 1 : 0;
 
 # =====================================================================
-#  æ–°è¦ã‚¹ãƒ¬ãƒƒãƒ‰ä½œæˆ
+#  V‹KƒXƒŒƒbƒhì¬
 # =====================================================================
 if ($is_new_thread) {
-    error_exit('ã‚¹ãƒ¬ãƒƒãƒ‰ã‚¿ã‚¤ãƒˆãƒ«ãŒé•·ã™ãã¾ã™ã€‚') if length($subject) > 100;
+    error_exit('ƒXƒŒƒbƒhƒ^ƒCƒgƒ‹‚ª’·‚·‚¬‚Ü‚·B') if length($subject) > 100;
 
-    # keyæœªæŒ‡å®šãªã‚‰ç¾åœ¨æ™‚åˆ»ã‹ã‚‰ç”Ÿæˆã€‚è¡çªã™ã‚‹å ´åˆã¯1ç§’ãšã¤ãšã‚‰ã™ã€‚
+    # key–¢w’è‚È‚çŒ»İ‚©‚ç¶¬BÕ“Ë‚·‚éê‡‚Í1•b‚¸‚Â‚¸‚ç‚·B
     if (!length $key) {
         $key = time();
         while (-e "$dir/dat/$key.dat") {
@@ -97,7 +97,7 @@ if ($is_new_thread) {
         }
     }
     my $dat = "$dir/dat/$key.dat";
-    error_exit('åŒã˜ã‚­ãƒ¼ã®ã‚¹ãƒ¬ãƒƒãƒ‰ãŒæ—¢ã«å­˜åœ¨ã—ã¾ã™ã€‚') if -e $dat;
+    error_exit('“¯‚¶ƒL[‚ÌƒXƒŒƒbƒh‚ªŠù‚É‘¶İ‚µ‚Ü‚·B') if -e $dat;
 
     my $first_line = join('<>', $name, $mail, $timecol, $body, $subject) . "\n";
     write_lines_locked($dat, '>', $first_line);
@@ -106,7 +106,7 @@ if ($is_new_thread) {
     my $subjects = load_subjects($subject_file);
     unshift @$subjects, { file => "$key.dat", title => $subject, count => 1 };
 
-    # ä¸Šé™ã‚’è¶…ãˆãŸã‚¹ãƒ¬ãƒƒãƒ‰ã¯ä¸€è¦§ã‹ã‚‰å¤–ã™ï¼ˆdatè½ã¡ï¼‰
+    # ãŒÀ‚ğ’´‚¦‚½ƒXƒŒƒbƒh‚Íˆê——‚©‚çŠO‚·idat—‚¿j
     if (scalar(@$subjects) > $max_threads) {
         $#$subjects = $max_threads - 1;
     }
@@ -114,33 +114,48 @@ if ($is_new_thread) {
 
     my $html = render_board_html(dir => $dir, bbs => $bbs, setting => \%setting, subjects => $subjects);
     write_lines_locked("$dir/index.html", '>', $html);
+my $ua = $ENV{'HTTP_USER_AGENT'} || '';
 
+
+if ($ua =~ /iPhone|Android/i) {
+
+    
+    my $uri = $ENV{'REQUEST_URI'};  
+    $uri =~ s/[^\/]+$//;             
+
+    if ($ENV{'REQUEST_URI'} !~ /sm\.html$/) {
+
+        print "Status: 302 Found\n";
+        print "Location: ../board.html?board=$bbs\n\n";
+        exit;
+    }
+}
     print "Status: 302 Found\n";
     print html_header();
     print <<"EOF";
-<html><head><title>ã‚¹ãƒ¬ç«‹ã¦å®Œäº†</title><meta charset="Shift_JIS">
+<html><head><title>ƒXƒŒ—§‚ÄŠ®—¹</title><meta charset="Shift_JIS">
 <meta http-equiv="refresh" content="2;URL=../$bbs/"></head>
 <body>
-<b>ã‚¹ãƒ¬ãƒƒãƒ‰ã‚’ç«‹ã¦ã¾ã—ãŸã€‚</b><br>
-ç”»é¢ã‚’åˆ‡ã‚Šæ›¿ãˆã‚‹ã¾ã§ã—ã°ã‚‰ããŠå¾…ã¡ä¸‹ã•ã„ã€‚<br><br>
-[<a href="../$bbs/">æ²ç¤ºæ¿ã«æˆ»ã‚‹</a>]
-[<a href="read.cgi/$bbs/$key">ã‚¹ãƒ¬ãƒƒãƒ‰ã‚’è¦‹ã‚‹</a>]
+<b>ƒXƒŒƒbƒh‚ğ—§‚Ä‚Ü‚µ‚½B</b><br>
+‰æ–Ê‚ğØ‚è‘Ö‚¦‚é‚Ü‚Å‚µ‚Î‚ç‚­‚¨‘Ò‚¿‰º‚³‚¢B<br><br>
+[<a href="../$bbs/">Œf¦”Â‚É–ß‚é</a>]
+[<a href="read.cgi/$bbs/$key">ƒXƒŒƒbƒh‚ğŒ©‚é</a>]
 </body></html>
 EOF
     exit;
 }
 
 # =====================================================================
-#  ãƒ¬ã‚¹æŠ•ç¨¿
+#  ƒŒƒX“Še
 # =====================================================================
-error_exit('ã‚¹ãƒ¬ãƒƒãƒ‰ã‚­ãƒ¼ãŒæŒ‡å®šã•ã‚Œã¦ã„ã¾ã›ã‚“ã€‚') unless length $key;
+error_exit('ƒXƒŒƒbƒhƒL[‚ªw’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñB') unless length $key;
 my $dat = "$dir/dat/$key.dat";
-error_exit('æŒ‡å®šã•ã‚ŒãŸã‚¹ãƒ¬ãƒƒãƒ‰ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚') unless -e $dat;
+error_exit('w’è‚³‚ê‚½ƒXƒŒƒbƒh‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB') unless -e $dat;
 
 my @lines = read_lines_locked($dat);
 my $no = scalar(@lines) + 1;
 
-# ãƒ¬ã‚¹æ•°ä¸Šé™ãƒã‚§ãƒƒã‚¯ï¼ˆdatè½ã¡ï¼‰
+# ƒŒƒX”ãŒÀƒ`ƒFƒbƒNidat—‚¿j
 if (scalar(@lines) >= $max_res) {
     my $subject_file = "$dir/subject.txt";
     my $subjects = load_subjects($subject_file);
@@ -149,10 +164,10 @@ if (scalar(@lines) >= $max_res) {
 
     print html_header();
     print <<"EOF";
-<html><head><title>ã‚¨ãƒ©ãƒ¼</title><meta charset="Shift_JIS"></head>
+<html><head><title>ƒGƒ‰[</title><meta charset="Shift_JIS"></head>
 <body>
-<b>ã“ã®ã‚¹ãƒ¬ãƒƒãƒ‰ã¯ $max_res ãƒ¬ã‚¹ã‚’è¶…ãˆãŸãŸã‚æ›¸è¾¼ã§ãã¾ã›ã‚“ã€‚(datè½ã¡)</b><br><br>
-[<a href="../$bbs/">æ²ç¤ºæ¿ã«æˆ»ã‚‹</a>]
+<b>‚±‚ÌƒXƒŒƒbƒh‚Í $max_res ƒŒƒX‚ğ’´‚¦‚½‚½‚ß‘‚Å‚«‚Ü‚¹‚ñB(dat—‚¿)</b><br><br>
+[<a href="../$bbs/">Œf¦”Â‚É–ß‚é</a>]
 </body></html>
 EOF
     exit;
@@ -166,15 +181,15 @@ my $subjects = load_subjects($subject_file);
 
 my ($entry) = grep { $_->{file} eq "$key.dat" } @$subjects;
 if (!$entry) {
-    # subject.txt ã«ç„¡ã„ï¼ˆdatè½ã¡å¾Œã®å†æŠ•ç¨¿ç­‰ï¼‰å ´åˆã¯æœ«å°¾ã«è£œå®Œ
-    $entry = { file => "$key.dat", title => 'ç„¡é¡Œ', count => 0 };
+    # subject.txt ‚É–³‚¢idat—‚¿Œã‚ÌÄ“Še“™jê‡‚Í––”ö‚É•âŠ®
+    $entry = { file => "$key.dat", title => '–³‘è', count => 0 };
     push @$subjects, $entry;
 }
 $entry->{count} = $no;
 
 my $is_sage = ($mail =~ /sage/i) ? 1 : 0;
 unless ($is_sage) {
-    # age: è©²å½“ã‚¹ãƒ¬ãƒƒãƒ‰ã‚’å…ˆé ­ã«ç§»å‹•
+    # age: ŠY“–ƒXƒŒƒbƒh‚ğæ“ª‚ÉˆÚ“®
     @$subjects = ($entry, grep { $_ != $entry } @$subjects);
 }
 save_subjects($subject_file, $subjects);
@@ -183,9 +198,9 @@ my $html = render_board_html(dir => $dir, bbs => $bbs, setting => \%setting, sub
 write_lines_locked("$dir/index.html", '>', $html);
 
 # =====================================================================
-# Pushé€šçŸ¥ï¼ˆè³¼èª­è€…ã«ä¸€åº¦ã ã‘é€šçŸ¥ï¼‰
+# Push’Ê’miw“ÇÒ‚Éˆê“x‚¾‚¯’Ê’mj
 # =====================================================================
-my $sub_file = "$dir/dat/$key.sub.pl";   # JSONã§ã¯ãªã .pl ã«ã™ã‚‹
+my $sub_file = "$dir/dat/$key.sub.pl";   # JSON‚Å‚Í‚È‚­ .pl ‚É‚·‚é
 my $notify_file = "$dir/dat/$key.notify";
 
 my $last = 0;
@@ -193,11 +208,11 @@ $last = do { local(@ARGV,$/) = $notify_file; <> } if -e $notify_file;
 
 if ($no > $last && -e $sub_file) {
 
-    # JSON.pm ã¯ä½¿ã‚ãªã„
-    my $subs = do $sub_file;   # Perlæ§‹é€ ã¨ã—ã¦èª­ã¿è¾¼ã‚€
+    # JSON.pm ‚Íg‚í‚È‚¢
+    my $subs = do $sub_file;   # Perl\‘¢‚Æ‚µ‚Ä“Ç‚İ‚Ş
 
     foreach my $s (@$subs) {
-        # JSONã‚¨ãƒ³ã‚³ãƒ¼ãƒ‰ã‚‚ä¸è¦
+        # JSONƒGƒ“ƒR[ƒh‚à•s—v
         my $tmp = "$dir/dat/sub.tmp.pl";
         open my $fh, '>', $tmp;
         print $fh Data::Dumper->new([$s])->Terse(1)->Dump;
@@ -213,17 +228,32 @@ if ($no > $last && -e $sub_file) {
 
 
 
+my $ua = $ENV{'HTTP_USER_AGENT'} || '';
 
+
+if ($ua =~ /iPhone|Android/i) {
+
+    
+    my $uri = $ENV{'REQUEST_URI'};  
+    $uri =~ s/[^\/]+$//;             
+
+    if ($ENV{'REQUEST_URI'} !~ /sm\.html$/) {
+
+        print "Status: 302 Found\n";
+        print "Location: ../board.html?board=$bbs\n\n";
+        exit;
+    }
+}
 print "Status: 302 Found\n";
 print html_header();
 print <<"EOF";
-<html><head><title>æ›¸ãè¾¼ã¿å®Œäº†</title><meta charset="Shift_JIS">
+<html><head><title>‘‚«‚İŠ®—¹</title><meta charset="Shift_JIS">
 <meta http-equiv="refresh" content="2;URL=read.cgi/$bbs/$key"></head>
 <body>
-<b>æ›¸ãè¾¼ã¿ãŒçµ‚ã‚ã‚Šã¾ã—ãŸã€‚</b><br>
-ç”»é¢ã‚’åˆ‡ã‚Šæ›¿ãˆã‚‹ã¾ã§ã—ã°ã‚‰ããŠå¾…ã¡ä¸‹ã•ã„ã€‚<br><br>
-[<a href="../$bbs/">æ²ç¤ºæ¿ã«æˆ»ã‚‹</a>]
-[<a href="read.cgi/$bbs/$key">ã‚¹ãƒ¬ãƒƒãƒ‰ã«æˆ»ã‚‹</a>]
+<b>‘‚«‚İ‚ªI‚í‚è‚Ü‚µ‚½B</b><br>
+‰æ–Ê‚ğØ‚è‘Ö‚¦‚é‚Ü‚Å‚µ‚Î‚ç‚­‚¨‘Ò‚¿‰º‚³‚¢B<br><br>
+[<a href="../$bbs/">Œf¦”Â‚É–ß‚é</a>]
+[<a href="read.cgi/$bbs/$key">ƒXƒŒƒbƒh‚É–ß‚é</a>]
 </body></html>
 EOF
 exit;

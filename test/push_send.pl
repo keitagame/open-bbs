@@ -12,7 +12,7 @@ my $wp = Web::Push->new(
     private_key => 'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgOZE9hk7fgD3EzklSufu74doPg_hC21hpvCho6LIz7xChRANCAAQdWO2C1Osj86a5pqQ_MDPKCyAfW4V9a1scLLwcOBT1dhwBFljvF-6S-I5ZXJIYVQDOWkefiUchUZJ-G63Bw9Vk'
 );
 
-my $payload = '{"title":"ã‚¹ãƒ¬æ›´æ–°","body":"æ–°ã—ã„ãƒ¬ã‚¹ãŒã‚ã‚Šã¾ã™"}';
+my $payload = '{"title":"ƒXƒŒXV","body":"V‚µ‚¢ƒŒƒX‚ª‚ ‚è‚Ü‚·"}';
 
 my $res = $wp->send($subscription, $payload);
 

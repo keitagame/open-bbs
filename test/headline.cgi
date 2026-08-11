@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-# Shift_JIS ã®ã¾ã¾å‡ºåŠ›
+# Shift_JIS ‚Ì‚Ü‚Üo—Í
 print "Content-Type: text/html; charset=Shift_JIS\n\n";
 
 
@@ -24,7 +24,7 @@ my $SUBJECT_FILE = "$BBS_DIR/subject.txt";
 
 open my $fh, '<', $SUBJECT_FILE
   or do {
-      print "<p>subject.txt ãŒé–‹ã‘ã¾ã›ã‚“: $SUBJECT_FILE</p>\n";
+      print "<p>subject.txt ‚ªŠJ‚¯‚Ü‚¹‚ñ: $SUBJECT_FILE</p>\n";
       exit;
   };
 
@@ -32,12 +32,12 @@ my @lines = <$fh>;
 close $fh;
 
 # -----------------------------
-# HTML å‡ºåŠ›ï¼ˆShift_JISï¼‰
+# HTML o—ÍiShift_JISj
 # -----------------------------
-print "<html><head><title>ãƒ˜ãƒƒãƒ‰ãƒ©ã‚¤ãƒ³</title></head><body>\n";
-print "<div style='background:#C4FFCA;padding:1px;'><font size='5'><strong>Anyã¡ã‚ƒã‚“ã­ã‚‹ æ–°ç€ã‚¹ãƒ¬ãƒƒãƒ‰ãƒ˜ãƒƒãƒ‰ãƒ©ã‚¤ãƒ³</strong></font></div>\n";
-print "<strong>$bbs æ¿</strong>\n";
-print "<a href='../$bbs'>ãƒˆãƒƒãƒ—ã¸</a><br>\n";
+print "<html><head><title>ƒwƒbƒhƒ‰ƒCƒ“</title></head><body>\n";
+print "<div style='background:#C4FFCA;padding:1px;'><font size='5'><strong>Any‚¿‚á‚ñ‚Ë‚é V’…ƒXƒŒƒbƒhƒwƒbƒhƒ‰ƒCƒ“</strong></font></div>\n";
+print "<strong>$bbs ”Â</strong>\n";
+print "<a href='../$bbs'>ƒgƒbƒv‚Ö</a><br>\n";
 
 my $count = 0;
 print "<div style='border-radius:10px;border:2px dashed orange;padding:5px;background:#fff7e8;'>\n";
@@ -54,7 +54,7 @@ for my $line (@lines) {
 
     
 
-    open my $fh, '<', $dat_file or die "dat ãŒé–‹ã‘ã¾ã›ã‚“";
+    open my $fh, '<', $dat_file or die "dat ‚ªŠJ‚¯‚Ü‚¹‚ñ";
 
     my $first = <$fh>;
     close $fh;
@@ -66,7 +66,7 @@ for my $line (@lines) {
 
     $title =~ s/\s*\(\d+\)\s*$//;
 
-    print qq{ <font size="1">$datetime</font><a href="$url">â˜…$title</a><br>\n};
+    print qq{ <font size="1">$datetime</font><a href="$url">š$title</a><br>\n};
 
     $count++;
 }
